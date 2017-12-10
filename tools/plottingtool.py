@@ -66,10 +66,7 @@ except:
     pass
 
 
-
 class PlottingTool:
-
-
     def changePlotWidget(self, library, frame_for_plot):
         
         if library == "PyQtGraph":
@@ -173,7 +170,39 @@ class PlottingTool:
                 wdg.plotWdg.figure.get_axes()[0].vlines(profileLen, 0, 1000, linewidth = 1)
             profileLen = 0
 
+    def profileSegments(self, x, y, num):
+        """
+        Returns a simplified version of the line represent by x, y broken into num profileSegments
+        Args:
+            x:  numpy array of x values
+            y: numpy array of y values
+            num: number of profileSegments to break into
 
+        Returns:
+            tuple (x, y) of numpy arrays
+            TODO labels
+        """
+        # Profile segments
+        new_x = [x[i] for i in xrange(0, len(x), int(len(x)/num))]
+        new_y = [y[i] for i in xrange(0, len(y), int(len(y)/num))]
+        new_x.append(x[-1])
+        new_y.append(y[-1])
+
+        # Profile segment labels
+        labels = []
+        lastXY = (new_x[0], new_y[0])
+        for thisXY in zip(new_x[1:], new_y[1:]):
+            try:
+                grade = float(thisXY[1] - lastXY[1])/float(thisXY[0] - lastXY[0])*100
+            except ZeroDivisionError:
+                grade = 0
+            yDiff = abs(thisXY[1] - lastXY[1])
+            labelX = (thisXY[0] + lastXY[0])/2
+            labelY = (thisXY[1] + lastXY[1])/2 + yDiff * 0.3
+            labels.append((labelX, labelY, grade))
+            lastXY = thisXY
+
+        return np.array(new_x), np.array(new_y), labels
 
     def attachCurves(self, wdg, profiles, model1, library):
     
@@ -184,7 +213,37 @@ class PlottingTool:
                 #case line outside the raster
                 y = np.array(profiles[i]["z"], dtype=np.float)  #replace None value by np.nan
                 x = np.array(profiles[i]["l"])
-                wdg.plotWdg.plot(x, y, pen=pg.mkPen( model1.item(i,1).data(Qt.BackgroundRole),  width=2) , name = tmp_name)
+                wdg.plotWdg.plot(x, y, pen=pg.mkPen(model1.item(i, 1).data(Qt.BackgroundRole), width=2), name=tmp_name)
+                # Profiles
+                x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], 7)
+                wdg.plotWdg.plot(x, y, pen=pg.mkPen(color='k', width=1.5), name=tmp_name + '_prof')
+                #wdg.plotWdg.plot(x, y, pen=pg.mkPen(model1.item(i, 1).data(Qt.BackgroundRole), width=2), name=tmp_name)
+
+            #y = np.array(profiles[0]["z"], dtype=np.float)  #replace None value by np.nan
+            #x = np.array(profiles[0]["l"])
+            #x, y = self.profileSegments(x, y, 7)
+            #wdg.plotWdg.plot(x, y, pen=(1, 4))
+            #item = QGraphicsSimpleTextItem()
+
+            #item.setText('THIS is a test')
+            #item.x = 5000
+            #item.y = 5000
+
+            #label = pg.ValueLabel()
+            #label.setText('MOAR')
+
+            #wdg.plotWdg.addItem(item, (0, 6200))
+            # wdg.plotWdg.addItem(label)
+
+            #dir_list = dir(item)
+            #with open('/Users/mikebannister/out.txt', 'wt') as outf:
+                #outf.write(str(help(QGraphicsSimpleTextItem)))
+
+            #mytmp = [dir_list[i:i+20] for i in xrange(0, len(x), 20)]
+            #for thing in mytmp:
+                #QMessageBox.information(None, "DEBUG:", str(thing))
+            #wdg.plotWdg.plot(np.array([0, 2000]), np.array([6000, 6500]), pen=(1, 3))
+
             #set it visible or not
             for i in range(0 , model1.rowCount()):
                 tmp_name = ("%s#%d") % (profiles[i]["layer"].name(), profiles[i]["band"])
@@ -232,16 +291,23 @@ class PlottingTool:
             wdg.plotWdg.replot()
             
         elif library == "Matplotlib" and has_mpl:
-            for i in range(0 , model1.rowCount()):
+            for i in range(0, model1.rowCount()):
                 tmp_name = ("%s#%d") % (profiles[i]["layer"].name(), profiles[i]["band"])
                 if model1.item(i,0).data(Qt.CheckStateRole):
                     wdg.plotWdg.figure.get_axes()[0].plot(profiles[i]["l"], profiles[i]["z"], gid = tmp_name, linewidth = 3, visible = True)
                 else:
                     wdg.plotWdg.figure.get_axes()[0].plot(profiles[i]["l"], profiles[i]["z"], gid = tmp_name, linewidth = 3, visible = False)
                 self.changeColor(wdg, "Matplotlib", model1.item(i,1).data(Qt.BackgroundRole), tmp_name)
+
+                # Profiles
+                x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], 7)
+                wdg.plotWdg.figure.get_axes()[0].plot(x, y, gid=tmp_name + '_prof', linewidth=1, color='black', marker='o')
+                for label in labels:
+                    wdg.plotWdg.figure.get_axes()[0].text(label[0], label[1], str(round(label[2], 1))+'%')
+
                 try:
                     self.reScalePlot(wdg, profiles, library)
-                    wdg.plotWdg.figure.get_axes()[0].set_xbound( 0, max(profiles[len(profiles) - 1]["l"]) )
+                    wdg.plotWdg.figure.get_axes()[0].set_xbound(0, max(profiles[len(profiles) - 1]["l"]) )
                 except:
                     pass
                     #self.iface.mainWindow().statusBar().showMessage("Problem with setting scale of plotting")
