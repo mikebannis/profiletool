@@ -88,6 +88,9 @@ class PTDockWidget(QDockWidget, FormClass):
         self.connectYSpinbox()
         #self.sbMinVal.valueChanged.connect(self.reScalePlot)
         #self.sbMaxVal.valueChanged.connect(self.reScalePlot)
+
+        # slope segements spinbox
+        self.slopeSegments.setValue(8)
         
         #model
         self.mdl = QStandardItemModel(0, 6)         #the model whitch in are saved layers analysed caracteristics
@@ -119,8 +122,11 @@ class PTDockWidget(QDockWidget, FormClass):
         self.pushButton_reinitview.clicked.connect(self.reScalePlot)
         
         self.checkBox_showcursor.stateChanged.connect(self.showCursor)
+        self.checkBox_slopelabels.stateChanged.connect(self.setSlopes)
+        # slopes and labels default to off
+        self.showslopes = False
 
-            
+        self.slopeSegments    
     #********************************************************************************
     #init things ****************************************************************
     #********************************************************************************
@@ -155,7 +161,12 @@ class PTDockWidget(QDockWidget, FormClass):
             elif self.selectionmethod == 1:
                 self.iface.mainWindow().statusBar().showMessage(self.profiletoolcore.toolrenderer.textquit1)
             
-            
+    def setSlopes(self, int1):
+        """ Toggle visibility of slope segments and slope labels """
+        if int1 == 0:
+            self.showslopes = False
+        else:
+            self.showslopes = True
             
     def changePlotLibrary(self, item):
         self.plotlibrary = self.cboLibrary.itemText(item)

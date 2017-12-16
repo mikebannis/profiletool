@@ -121,6 +121,8 @@ class PlottingTool:
                 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
             fig = Figure( (1.0, 1.0), linewidth=0.0, subplotpars = matplotlib.figure.SubplotParams(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)    )
+            
+
 
             font = {'family' : 'arial', 'weight' : 'normal', 'size'   : 12}
             rc('font', **font)
@@ -128,7 +130,9 @@ class PlottingTool:
             rect = fig.patch
             rect.set_facecolor((0.9,0.9,0.9))
 
-            self.subplot = fig.add_axes((0.05, 0.15, 0.92,0.82))
+            self.subplot = fig.add_axes((0.1, 0.1, 0.81, 0.82))
+            #self.subplot = fig.add_subplot(111)
+            #fig.tight_layout()
             self.subplot.set_xbound(0,1000)
             self.subplot.set_ybound(0,1000)
             self.manageMatplotlibAxe(self.subplot)
@@ -182,6 +186,10 @@ class PlottingTool:
             tuple (x, y) of numpy arrays
             TODO labels
         """
+        # Abort silently if we have data to process
+        if len(x) == 0 or len(y) == 0:
+            return
+
         # Profile segments
         new_x = [x[i] for i in xrange(0, len(x), int(len(x)/num))]
         new_y = [y[i] for i in xrange(0, len(y), int(len(y)/num))]
@@ -205,7 +213,14 @@ class PlottingTool:
         return np.array(new_x), np.array(new_y), labels
 
     def attachCurves(self, wdg, profiles, model1, library):
-    
+        """
+        Draw profile(s) and slopes on graph
+
+        :param wdg: PTDockWidget
+        :param profiles: list of profile dictionaries
+        :param model1: ????
+        :param library: graphing library to use (string) 
+        """
         if library == "PyQtGraph":
             #cretae graph
             for i in range(0 , model1.rowCount()):
@@ -215,7 +230,8 @@ class PlottingTool:
                 x = np.array(profiles[i]["l"])
                 wdg.plotWdg.plot(x, y, pen=pg.mkPen(model1.item(i, 1).data(Qt.BackgroundRole), width=2), name=tmp_name)
                 # Profiles
-                x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], 7)
+                # TODO clean up handling here if there are no profiles
+                x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], wdg.slopeSegments.value())
                 wdg.plotWdg.plot(x, y, pen=pg.mkPen(color='k', width=1.5), name=tmp_name + '_prof')
                 #wdg.plotWdg.plot(x, y, pen=pg.mkPen(model1.item(i, 1).data(Qt.BackgroundRole), width=2), name=tmp_name)
 
@@ -300,10 +316,11 @@ class PlottingTool:
                 self.changeColor(wdg, "Matplotlib", model1.item(i,1).data(Qt.BackgroundRole), tmp_name)
 
                 # Profiles
-                x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], 7)
-                wdg.plotWdg.figure.get_axes()[0].plot(x, y, gid=tmp_name + '_prof', linewidth=1, color='black', marker='o')
-                for label in labels:
-                    wdg.plotWdg.figure.get_axes()[0].text(label[0], label[1], str(round(label[2], 1))+'%')
+                if wdg.showslopes:
+                    x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], wdg.slopeSegments.value() )
+                    wdg.plotWdg.figure.get_axes()[0].plot(x, y, gid=tmp_name + '_prof', linewidth=1, color='black', marker='o')
+                    for label in labels:
+                        wdg.plotWdg.figure.get_axes()[0].text(label[0], label[1], str(round(label[2], 1))+'%')
 
                 try:
                     self.reScalePlot(wdg, profiles, library)
