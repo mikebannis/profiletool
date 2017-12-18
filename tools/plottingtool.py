@@ -47,6 +47,8 @@ pg.setConfigOption('background', 'w')
 from .. import dxfwrite
 from ..dxfwrite import DXFEngine as dxf
 
+import math
+
 has_qwt = False
 has_mpl = False
 try:
@@ -142,9 +144,6 @@ class PlottingTool:
             sizePolicy.setVerticalStretch(0)
             canvas.setSizePolicy(sizePolicy)
             return canvas
-            
-        
-        
 
     def drawVertLine(self,wdg, pointstoDraw, library):
         if library == "PyQtGraph":
@@ -174,23 +173,26 @@ class PlottingTool:
                 wdg.plotWdg.figure.get_axes()[0].vlines(profileLen, 0, 1000, linewidth = 1)
             profileLen = 0
 
-    def profileSegments(self, x, y, num):
+    def profileSegments(self, x, y, num, labeltype):
         """
         Returns a simplified version of the line represent by x, y broken into num profileSegments
         Args:
             x:  numpy array of x values
             y: numpy array of y values
             num: number of profileSegments to break into
+            labeltype: type of labels to print
 
         Returns:
-            tuple (x, y) of numpy arrays
-            TODO labels
+            x, y, labels
+                x: list of x coordinates of slope segments
+                y: numpy array of y coordinates of slope segments
+                labels: (label x position, lable y position, label value (grade/angle))
         """
         # Abort silently if we have data to process
         if len(x) == 0 or len(y) == 0:
             return
 
-        # Profile segments
+        # Break profile into 'num' segments
         new_x = [x[i] for i in xrange(0, len(x), int(len(x)/num))]
         new_y = [y[i] for i in xrange(0, len(y), int(len(y)/num))]
         new_x.append(x[-1])
@@ -201,13 +203,23 @@ class PlottingTool:
         lastXY = (new_x[0], new_y[0])
         for thisXY in zip(new_x[1:], new_y[1:]):
             try:
-                grade = float(thisXY[1] - lastXY[1])/float(thisXY[0] - lastXY[0])*100
+                grade = float(thisXY[1] - lastXY[1])/float(thisXY[0] - lastXY[0])
             except ZeroDivisionError:
-                grade = 0
+                grade = 9999
+
             yDiff = abs(thisXY[1] - lastXY[1])
             labelX = (thisXY[0] + lastXY[0])/2
-            labelY = (thisXY[1] + lastXY[1])/2 + yDiff * 0.3
-            labels.append((labelX, labelY, grade))
+            labelY = (thisXY[1] + lastXY[1])/2 + yDiff * 0.2  # Raise label above line, this should take line angle into account
+
+            if labeltype == 'Percent Grade':
+                label = str(round(grade*100, 1))+'%'
+            elif labeltype == 'Degrees':
+                label = str(int(math.degrees(math.atan(grade))))+u'\xb0'
+            else:
+                label = str(round(grade*100, 1))+'%/'
+                label += str(int(math.degrees(math.atan(grade))))+u'\xb0'
+            labels.append((labelX, labelY, label))
+
             lastXY = thisXY
 
         return np.array(new_x), np.array(new_y), labels
@@ -231,9 +243,10 @@ class PlottingTool:
                 wdg.plotWdg.plot(x, y, pen=pg.mkPen(model1.item(i, 1).data(Qt.BackgroundRole), width=2), name=tmp_name)
                 # Profiles
                 # TODO clean up handling here if there are no profiles
-                x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], wdg.slopeSegments.value())
-                wdg.plotWdg.plot(x, y, pen=pg.mkPen(color='k', width=1.5), name=tmp_name + '_prof')
-                #wdg.plotWdg.plot(x, y, pen=pg.mkPen(model1.item(i, 1).data(Qt.BackgroundRole), width=2), name=tmp_name)
+                # Profiles
+                if wdg.showslopes:
+                    x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], wdg.slopeSegments.value(), wdg.slopelabeltype)
+                    wdg.plotWdg.plot(x, y, pen=pg.mkPen(color='k', width=1.5), name=tmp_name + '_prof')
 
             #y = np.array(profiles[0]["z"], dtype=np.float)  #replace None value by np.nan
             #x = np.array(profiles[0]["l"])
@@ -317,10 +330,10 @@ class PlottingTool:
 
                 # Profiles
                 if wdg.showslopes:
-                    x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], wdg.slopeSegments.value() )
+                    x, y, labels = self.profileSegments(profiles[i]["l"], profiles[i]["z"], wdg.slopeSegments.value(), wdg.slopelabeltype)
                     wdg.plotWdg.figure.get_axes()[0].plot(x, y, gid=tmp_name + '_prof', linewidth=1, color='black', marker='o')
                     for label in labels:
-                        wdg.plotWdg.figure.get_axes()[0].text(label[0], label[1], str(round(label[2], 1))+'%')
+                        wdg.plotWdg.figure.get_axes()[0].text(label[0], label[1], label[2])
 
                 try:
                     self.reScalePlot(wdg, profiles, library)

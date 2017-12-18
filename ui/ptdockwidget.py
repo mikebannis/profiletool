@@ -109,6 +109,10 @@ class PTDockWidget(QDockWidget, FormClass):
         self.selectionmethod = 0
         self.plotlibrary = None                            #The plotting library to use
         self.showcursor = True
+        self.slopelabeltype = "Percent Grade"
+        self.slopeLabelType.addItem("Percent Grade")
+        self.slopeLabelType.addItem("Degrees")
+        self.slopeLabelType.addItem("Both")
         
         #Signals
         self.butSaveAs.clicked.connect(self.saveAs)
@@ -123,10 +127,11 @@ class PTDockWidget(QDockWidget, FormClass):
         
         self.checkBox_showcursor.stateChanged.connect(self.showCursor)
         self.checkBox_slopelabels.stateChanged.connect(self.setSlopes)
+        self.slopeLabelType.currentIndexChanged.connect(self.changeSlopeLabelType)
+
         # slopes and labels default to off
         self.showslopes = False
 
-        self.slopeSegments    
     #********************************************************************************
     #init things ****************************************************************
     #********************************************************************************
@@ -190,8 +195,9 @@ class PTDockWidget(QDockWidget, FormClass):
         else:
             self.checkBox_mpl_tracking.setCheckState(0)
             self.checkBox_mpl_tracking.setEnabled(False)
-            
-            
+
+    def changeSlopeLabelType(self, item):
+        self.slopelabeltype = self.slopeLabelType.itemText(item)
             
     def addPlotWidget(self, library):
         layout = self.frame_for_plot.layout()

@@ -415,7 +415,7 @@ on graph with canvas</string>
         <string>Settings</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="1">
+        <item row="1" column="0">
          <widget class="QGroupBox" name="groupBox_3">
           <property name="title">
            <string>Plot library</string>
@@ -449,10 +449,10 @@ on graph with canvas</string>
           </layout>
          </widget>
         </item>
-        <item row="1" column="0">
+        <item row="0" column="1">
          <widget class="QGroupBox" name="groupBox_4">
           <property name="title">
-           <string>Slope Label</string>
+           <string>Slope Labels</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_9">
            <item>
@@ -477,7 +477,6 @@ on graph with canvas</string>
            <string>Number of Slope Segments</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_10">
-	  
               <item>
                <widget class="QSpinBox" name="slopeSegments">
                 <property name="keyboardTracking">
@@ -491,11 +490,22 @@ on graph with canvas</string>
                 </property>
                </widget>
               </item>
-	  
 	  </layout>
          </widget>
         </item>
-        <item row="2" column="0">
+        <item row="2" column="1">
+         <widget class="QGroupBox" name="groupBox_6">
+          <property name="title">
+           <string>Slope label type - only works with the Matplotlib library</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_11">
+           <item>
+            <widget class="QComboBox" name="slopeLabelType"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="3" column="0">
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
